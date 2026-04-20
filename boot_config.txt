@@ -1,0 +1,31 @@
+# =========================================================
+# Raspberry Pi 4 Boot Configuration for Android Automotive/Infotainment
+# =========================================================
+
+# Ensure standard HDMI output logic
+hdmi_force_hotplug=1
+
+# Disable overscan for full screen utilization on car panels
+disable_overscan=1
+
+# Custom HDMI timings based on the raw 10.1" automotive panel
+# Format: hdmi_timings=<h_active_pixels> <h_sync_polarity> <h_front_porch> <h_sync_pulse> <h_back_porch> <v_active_lines> <v_sync_polarity> <v_front_porch> <v_sync_pulse> <v_back_porch> <v_sync_offset_a> <v_sync_offset_b> <pixel_rep> <frame_rate> <interlaced> <pixel_freq> <aspect_ratio>
+hdmi_group=2
+hdmi_mode=87
+hdmi_timings=1280 0 40 128 88 800 0 10 3 14 0 0 0 60 0 71000000 5
+
+# Enable audio over HDMI
+hdmi_drive=2
+
+# Increase GPU memory for Android UI rendering (SurfaceFlinger)
+gpu_mem=512
+
+# Enable hardware acceleration requirements for Android
+dtoverlay=vc4-kms-v3d-pi4
+max_framebuffers=2
+
+# Provide max power to USB peripherals (Touchscreen controller)
+max_usb_current=1
+
+# Disable splash screen to speed up boot perception
+disable_splash=1
