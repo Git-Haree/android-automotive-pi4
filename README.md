@@ -11,27 +11,27 @@ The primary focus of this project is the hardware-software integration of an aut
 ```mermaid
 flowchart TD
     subgraph Hardware Layer
-        Pi[Raspberry Pi 4 Model B\nSoC: Broadcom BCM2711\nARM Cortex-A72]
-        Disp[7-inch/10-inch\nTouch Display]
-        Peri[USB Input Peripherals\nMouse / Keyboard / CAN adapter]
-        Pow[12V to 5V 3A\nBuck Converter]
+        Pi["Raspberry Pi 4 Model B\nSoC: Broadcom BCM2711\nARM Cortex-A72"]
+        Disp["7-inch/10-inch\nTouch Display"]
+        Peri["USB Input Peripherals\nMouse / Keyboard / CAN adapter"]
+        Pow["12V to 5V 3A\nBuck Converter"]
     end
 
     subgraph Interface Bus
-        HDMI[Micro HDMI\nVideo Pipeline]
-        USB[USB 2.0/3.0\nHID & Touch Data]
-        GPIO[GPIO Pins\nIgnition/Status]
+        HDMI["Micro HDMI\nVideo Pipeline"]
+        USB["USB 2.0/3.0\nHID & Touch Data"]
+        GPIO["GPIO Pins\nIgnition/Status"]
     end
 
-    subgraph OS & Software Layer
-        LOS[LineageOS 18.1 Kernel\nDevice Drivers]
-        HAL[Hardware Abstraction Layer\nAudio/Display HALs]
-        SysUI[Android System UI\nLauncher & Apps]
+    subgraph OS Layer
+        LOS["LineageOS 18.1 Kernel\nDevice Drivers"]
+        HAL["Hardware Abstraction Layer\nAudio/Display HALs"]
+        SysUI["Android System UI\nLauncher & Apps"]
     end
 
     Pow -->|Power| Pi
     Pi --> HDMI --> Disp
-    Disp -->|Touch Feedback| USB --> Pi
+    Disp -->|"Touch Feedback"| USB --> Pi
     Peri --> USB --> Pi
     Pi --> GPIO
     
