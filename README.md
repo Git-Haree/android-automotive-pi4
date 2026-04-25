@@ -1,64 +1,94 @@
-# Android Automotive Infotainment Prototype (Raspberry Pi 4)
+# Android Automotive Infotainment System Prototype
 
-This repository contains the hardware configuration, interface settings, and ADB deployment scripts for an embedded Android-based Infotainment system running on a Raspberry Pi 4. The project utilizes Android (via LineageOS 18.1/Android 11) to simulate a vehicle digital cockpit environment.
+Android Automotive Infotainment System Prototype using Raspberry Pi 4 and AOSP-Based LineageOS.
+
+## Project Domain
+Embedded Systems | In-Vehicle Infotainment Systems | Android Auto Projection | Raspberry Pi Prototyping
 
 ## Overview
+This project is a functional prototype of a low-cost automotive infotainment head unit designed to simulate the smartphone projection workflow used in modern Android Auto-enabled vehicles. The system uses a Raspberry Pi 4 as the embedded processing platform, boots an AOSP-based custom Android operating system (LineageOS), and integrates HeadUnit Reloaded (HUR) to emulate an Android Auto-compatible automotive receiver.
 
-The primary focus of this project is the hardware-software integration of an automotive HMI (Human-Machine Interface). Instead of compiling the AOSP from source, this project leverages a pre-built LineageOS image, focusing primarily on configuring the physical interfaces (HDMI for the display pipeline, USB for touch/peripherals) and optimizing system constraints such as latency and boot configuration.
+The final setup allows a driver smartphone to connect through USB or Wi-Fi and project Android Auto content such as navigation, music, and communication applications onto an HDMI-connected display, mimicking a real in-vehicle infotainment (IVI) dashboard.
 
-### Hardware-Software Architecture
+## Problem Statement
+Modern cars and EVs use intelligent infotainment systems that allow drivers to mirror smartphone navigation, calls, messages, and media onto a central dashboard screen using Android Auto or Apple CarPlay. However, commercial automotive infotainment hardware is expensive and proprietary. 
+
+The objective is to build a low-cost prototype that replicates the essential Android Auto projection behavior using consumer-grade embedded hardware and open-source Android software. The main engineering challenge is that AOSP/LineageOS running on Raspberry Pi does not natively support certified Android Auto receiver services, requiring emulation middleware.
+
+## Architecture
 
 ```mermaid
 flowchart TD
-    subgraph Hardware Layer
-        Pi["Raspberry Pi 4 Model B\nSoC: Broadcom BCM2711\nARM Cortex-A72"]
-        Disp["7-inch/10-inch\nTouch Display"]
-        Peri["USB Input Peripherals\nMouse / Keyboard / CAN adapter"]
-        Pow["12V to 5V 3A\nBuck Converter"]
+    subgraph Embedded Processing Layer [Raspberry Pi 4 / LineageOS]
+        direction TB
+        LOS[LineageOS Core]
+        HUR[HeadUnit Reloaded Emulator]
+        LOS <--> HUR
     end
 
-    subgraph Interface Bus
-        HDMI["Micro HDMI\nVideo Pipeline"]
-        USB["USB 2.0/3.0\nHID & Touch Data"]
-        GPIO["GPIO Pins\nIgnition/Status"]
+    subgraph Host Smartphone Layer [Driver Device]
+        direction TB
+        Phone[Android Phone]
+        AA[Android Auto App]
+        Phone <--> AA
     end
 
-    subgraph OS Layer
-        LOS["LineageOS 18.1 Kernel\nDevice Drivers"]
-        HAL["Hardware Abstraction Layer\nAudio/Display HALs"]
-        SysUI["Android System UI\nLauncher & Apps"]
+    subgraph Communication Layer [Data Transfer]
+        USB[USB / Wi-Fi Handshake]
     end
 
-    Pow -->|Power| Pi
-    Pi --> HDMI --> Disp
-    Disp -->|"Touch Feedback"| USB --> Pi
-    Peri --> USB --> Pi
-    Pi --> GPIO
+    subgraph Hardware I/O [Peripherals]
+        Disp[HDMI Display]
+        Input[Touch/Keyboard/Mouse]
+    end
+
+    AA <-->|Protocol Handshake| USB
+    USB <-->|Media & Input Stream| HUR
     
-    HDMI -.-> LOS
-    USB -.-> LOS
-    LOS --> HAL
-    HAL --> SysUI
+    HUR -->|UI Rendering| Disp
+    Input -->|Touch Events| HUR
+
+    %% Styling
+    style LOS fill:#3b82f6,stroke:#1d4ed8,color:#fff,stroke-width:2px
+    style HUR fill:#10b981,stroke:#047857,color:#fff,stroke-width:2px
+    style Phone fill:#f59e0b,stroke:#b45309,color:#fff,stroke-width:2px
+    style AA fill:#f59e0b,stroke:#b45309,color:#fff,stroke-width:2px
+    style Disp fill:#8b5cf6,stroke:#6d28d9,color:#fff,stroke-width:2px
+    style Input fill:#64748b,stroke:#334155,color:#fff,stroke-width:2px
+    style USB fill:#ef4444,stroke:#b91c1c,color:#fff,stroke-width:2px
 ```
 
-## Setup Instructions
+## Hardware & Software Stack
 
-### 1. OS Deployment
-1. Download a compatible LineageOS (Android 11+) image for Raspberry Pi 4 (e.g., KonstaKANG builds).
-2. Flash the `.img` file to a high-speed MicroSD card (Class 10 minimum) using BalenaEtcher or `dd`.
+### Hardware Components
+* **Raspberry Pi 4 Model B:** Quad-core ARM Cortex-A72 processor
+* **MicroSD Card (16GB+):** Primary boot storage for OS image
+* **HDMI Monitor:** Simulates vehicle infotainment dashboard display
+* **Android Smartphone:** Driver device running Android Auto services
+* **USB Data Cable & Wi-Fi Hotspot:** For wired and wireless projection
+* **USB Keyboard/Mouse:** For initial OS setup
 
-### 2. Hardware Configuration
-The standard Android image may not correctly detect all HDMI displays or output proper resolution/timings for raw automotive panels.
-- Mount the `boot` partition of the flashed SD card.
-- Replace the default `config.txt` with the optimized `boot_config.txt` provided in this repository.
+### Software Stack
+* **OS:** LineageOS for Raspberry Pi 4 (AOSP based)
+* **Middleware:** HeadUnit Reloaded (HUR APK)
+* **Flashing Utility:** Raspberry Pi Imager / Balena Etcher
+* **Host Application:** Android Auto (on smartphone)
 
-### 3. Application Sideloading (ADB)
-Once the system boots, essential automotive applications (like media aggregators or navigation mocks) were installed over Wi-Fi/Ethernet using ADB.
-Run the provided script to batch install APKs and adjust screen density (DPI):
-```bash
-./adb_setup.sh <PI_IP_ADDRESS>
-```
+## Technical Architecture Decisions
 
-## System Constraints & Optimizations
-- **Display Latency:** Resolved by forcing specific HDMI timings and disabling overscan via the boot partition configuration.
-- **Power Delivery:** The Pi 4 under load requires consistent 5V/3A. Used an automotive-grade DC-DC buck converter to step down vehicle 12V supply to ensure no undervoltage throttling during UI rendering operations.
+### Why LineageOS instead of Raspbian?
+Raspbian is Linux-based and useful for generic embedded development, but Android Auto projection requires Android framework compatibility, media handling, APK installation, and Android UI services. LineageOS is built on AOSP and provides the necessary runtime environment to execute HUR.
+
+### Why is HUR Required?
+AOSP or LineageOS alone does not include Google Automotive Services or the proprietary projection services required for Android Auto. HUR acts as a virtual Android Auto head unit emulator, performing the receiver-side communication and acting as the middleware bridge between the smartphone and the Raspberry Pi.
+
+## Setup Procedure
+
+1. **Download LineageOS:** Obtain Raspberry Pi 4 compatible LineageOS zip.
+2. **Flash OS:** Use Balena Etcher/Raspberry Pi Imager to write the image to the SD card.
+3. **Boot Initialization:** Insert SD card, connect HDMI, peripherals, and power.
+4. **Android Configuration:** Complete welcome setup, configure Wi-Fi, enable installation from unknown sources.
+5. **Install HUR:** Transfer and install the HeadUnit Reloaded APK.
+6. **Configure HUR:** Set connectivity to manual mode, enable USB/Wi-Fi receiver behavior.
+7. **Configure Smartphone:** Ensure Android Auto is installed, grant USB projection permissions.
+8. **Establish Projection:** Connect the phone via USB. Open HUR on the Pi to initiate the handshake and start the session.
